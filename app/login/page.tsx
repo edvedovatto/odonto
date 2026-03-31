@@ -51,7 +51,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <Image src="/logo.png" alt="Bio Odontologia" width={160} height={100} className="h-20 w-auto object-contain" priority />
+          <Image src="/logo.png" alt="Bio Odontologia" width={240} height={150} className="h-32 w-auto object-contain" priority />
         </div>
 
         <p className="text-muted-foreground text-center text-sm mb-8">Entre na sua conta</p>

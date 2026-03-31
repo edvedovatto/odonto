@@ -19,7 +19,10 @@ async function generate(svgBuffer, outPath, size) {
 await generate(svgLogo, join(publicDir, 'icon-192.png'), 192)
 await generate(svgLogo, join(publicDir, 'icon-512.png'), 512)
 await generate(svgLogo, join(publicDir, 'icon.jpeg'),    512)
-await generate(svgLogo, join(publicDir, 'logo.png'),     800)
 await generate(svgLogo, join(publicDir, 'apple-touch-icon.png'), 180)
+
+// logo.png: fundo transparente para casar com qualquer cor de tela
+await sharp(svgLogo).resize(800, 800).png().toFile(join(publicDir, 'logo.png'))
+console.log(`✓ ${join(publicDir, 'logo.png')} (800x800 transparente)`)
 
 console.log('\nTodos os ícones gerados com sucesso.')
