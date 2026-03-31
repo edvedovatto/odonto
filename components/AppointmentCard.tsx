@@ -54,10 +54,11 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
   }
 
   async function savePayment() {
+    if (!method) { toast.error('Selecione a forma de pagamento'); return }
     setSaving(true)
     const supabase = createClient()
     const numValue = payValue ? parseFloat(payValue.replace(/\./g, '').replace(',', '.')) : null
-    const updates = { payment_status: 'paid' as const, payment_method: method || null, value: numValue }
+    const updates = { payment_status: 'paid' as const, payment_method: method, value: numValue }
     const { error } = await supabase.from('appointments').update(updates).eq('id', apt.id)
     if (error) {
       toast.error('Erro ao salvar pagamento')
@@ -296,7 +297,7 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
                     ))}
                   </div>
                 </div>
-                <Button className="w-full h-14 rounded-2xl font-bold" onClick={savePayment} disabled={saving}>
+                <Button className="w-full h-14 rounded-2xl font-bold" onClick={savePayment} disabled={saving || !method}>
                   {saving ? 'Salvando…' : 'Marcar como pago'}
                 </Button>
               </div>

@@ -6,17 +6,17 @@ import { Toaster } from "@/components/ui/sonner"
 const inter = Inter({ variable: "--font-sans", subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Bio",
-  description: "Agenda da Clínica Bio",
+  title: "Bio Odontologia",
+  description: "Agenda da Bio Odontologia",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Bio",
+    title: "Bio Odontologia",
   },
   icons: {
     icon: "/icon-192.png",
-    apple: "/icon-512.png",
+    apple: "/apple-touch-icon.png",
   },
 }
 

@@ -17,9 +17,18 @@ export default function LoginPage() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
+    const emailTrimmed = email.trim()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+      toast.error('Digite um e-mail válido')
+      return
+    }
+    if (password.length < 6) {
+      toast.error('A senha deve ter pelo menos 6 caracteres')
+      return
+    }
     setLoading(true)
     const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signInWithPassword({ email: emailTrimmed, password })
     if (error) {
       toast.error('E-mail ou senha incorretos')
       setLoading(false)
@@ -33,13 +42,10 @@ export default function LoginPage() {
     <div className="min-h-dvh flex flex-col items-center justify-center p-6 bg-background">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="flex justify-center mb-10">
-          <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg">
-            <Image src="/icon.jpeg" alt="Logo" width={64} height={64} className="w-full h-full object-cover" />
-          </div>
+        <div className="flex justify-center mb-8">
+          <Image src="/logo.png" alt="Bio Odontologia" width={160} height={100} className="h-20 w-auto object-contain" priority />
         </div>
 
-        <h1 className="text-3xl font-bold text-center mb-1 tracking-tight">Bio</h1>
         <p className="text-muted-foreground text-center text-sm mb-8">Entre na sua conta</p>
 
         <form onSubmit={handleLogin} className="space-y-4">

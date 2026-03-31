@@ -1,7 +1,7 @@
 {
-  "name": "Bio",
+  "name": "Bio Odontologia",
   "short_name": "Bio",
-  "description": "Agenda da Clínica Bio",
+  "description": "Agenda da Bio Odontologia",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
