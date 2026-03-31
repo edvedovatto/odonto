@@ -397,7 +397,7 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
                 )}
               </div>
             ) : (
-              <div className="relative">
+              <div>
                 <input className={fieldCls}
                   placeholder="Nome, telefone ou CPF…"
                   value={patientSearch}
@@ -405,7 +405,7 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
                   onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300)}
                   autoComplete="off" />
                 {patientResults.length > 0 && (
-                  <div className="absolute bottom-full left-0 right-0 z-50 mb-1.5 bg-white border border-border rounded-2xl shadow-xl overflow-hidden max-h-[40vh] overflow-y-auto">
+                  <div className="mt-2 border border-border rounded-2xl overflow-hidden bg-background">
                     {patientResults.map(p => (
                       <button key={p.id} type="button"
                         onClick={() => { setSelectedPatient(p); setPatientSearch(''); setPatientResults([]) }}
