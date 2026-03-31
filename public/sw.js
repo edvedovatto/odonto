@@ -28,8 +28,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url)
 
-  // Skip API calls, auth, and manifest
-  if (url.pathname.startsWith('/auth') || url.pathname === '/manifest.json' || url.pathname.startsWith('/api')) {
+  // Skip non-http, API calls, auth, and manifest
+  if (!url.protocol.startsWith('http') || url.pathname.startsWith('/auth') || url.pathname === '/manifest.json' || url.pathname.startsWith('/api')) {
     return
   }
 
