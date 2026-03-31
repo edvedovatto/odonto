@@ -197,6 +197,7 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
   const [duration, setDuration] = useState('30')
   const [doctorId, setDoctorId] = useState('')
   const [saving,   setSaving]   = useState(false)
+  const [conflictMsg, setConflictMsg] = useState('')
   const [dateOpen, setDateOpen] = useState(false)
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -233,7 +234,7 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
     setShowNewPatient(false); setNewName(''); setNewPhone(''); setNewCpf('')
     setDate(defaultDate); setTime('09:00'); setDuration('30')
     setDoctorId(currentUser?.role === 'dentist' ? currentUser.id : '')
-    setSaving(false); setDateOpen(false)
+    setSaving(false); setDateOpen(false); setConflictMsg('')
   }
 
   async function getOrCreatePatient(): Promise<string | null> {
@@ -297,9 +298,10 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
 
       const nextTime = nextAvailable.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
-      toast.error(`Conflito com ${patientName}. Próximo horário: ${nextTime}`, { duration: 5000 })
+      setConflictMsg(`Conflito com ${patientName}. Próximo horário disponível: ${nextTime}`)
       return true
     }
+    setConflictMsg('')
     return false
   }
 
@@ -366,6 +368,23 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
             </svg>
           </SheetClose>
         </div>
+
+        {/* Alerta de conflito */}
+        {conflictMsg && (
+          <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-red-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
+            </svg>
+            <div>
+              <p className="text-sm font-semibold text-red-700">{conflictMsg}</p>
+            </div>
+            <button type="button" onClick={() => setConflictMsg('')} className="ml-auto shrink-0 text-red-400">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         {/* Tipo */}
         {!editAppointment && (
