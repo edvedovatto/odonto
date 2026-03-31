@@ -21,7 +21,7 @@ export function shareWhatsApp(apt: Appointment) {
     `*Médico:* ${apt.doctor?.name ?? '—'}`,
     `*Data:* ${formatDate(apt.starts_at)}`,
     `*Horário:* ${formatTime(apt.starts_at)}`,
-    `*Endereço:* Rua dos Andradas, 1519 - sala 82`,
+    `*Endereço:* https://maps.google.com/?q=Rua+dos+Andradas,+1519,+Centro+Histórico,+Porto+Alegre`,
     ``,
     `Até lá!`,
   ]
