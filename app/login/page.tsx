@@ -49,11 +49,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center p-6 bg-background">
-      <div className="w-full max-w-sm">
-        <div className="flex justify-center mb-8">
+    <div className="min-h-dvh flex flex-col items-center justify-center p-6 bg-white">
+      <div className="w-full max-w-sm -mt-16">
+        <div className="flex justify-center mb-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.svg" alt="Bio Odontologia" className="h-36 w-auto" />
+          <img src="/logo.svg" alt="Bio Odontologia" className="h-28 w-auto" />
         </div>
 
         <p className="text-muted-foreground text-center text-sm mb-8">Entre na sua conta</p>
