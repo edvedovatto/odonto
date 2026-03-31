@@ -47,8 +47,8 @@ interface SelectOption { value: string; label: string }
 
 const DropdownList = React.forwardRef<
   HTMLDivElement,
-  { style: React.CSSProperties; options: SelectOption[]; value: string; onChange: (v: string) => void }
->(({ style, options, value, onChange }, ref) => {
+  { style: React.CSSProperties; options: SelectOption[]; value: string; onChange: (v: string) => void; disabledValues?: Set<string> }
+>(({ style, options, value, onChange, disabledValues }, ref) => {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [showTop,    setShowTop]    = useState(false)
   const [showBottom, setShowBottom] = useState(false)
@@ -75,17 +75,21 @@ const DropdownList = React.forwardRef<
 
         <div ref={scrollRef} onScroll={check}
           className="overflow-y-auto p-1.5" style={{ maxHeight: 240 }}>
-          {options.map(opt => (
-            <button key={opt.value} type="button"
-              onMouseDown={e => e.preventDefault()}
-              onClick={() => onChange(opt.value)}
-              className={cn(
-                'w-full text-left px-3.5 py-3 text-sm rounded-xl transition-colors font-medium',
-                opt.value === value ? 'bg-muted text-foreground' : 'text-foreground hover:bg-muted/60'
-              )}>
-              {opt.label}
-            </button>
-          ))}
+          {options.map(opt => {
+            const disabled = disabledValues?.has(opt.value)
+            return (
+              <button key={opt.value} type="button"
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => !disabled && onChange(opt.value)}
+                className={cn(
+                  'w-full text-left px-3.5 py-3 text-sm rounded-xl transition-colors font-medium',
+                  disabled ? 'text-muted-foreground/40 cursor-default' :
+                  opt.value === value ? 'bg-muted text-foreground' : 'text-foreground hover:bg-muted/60'
+                )}>
+                {opt.label}{disabled ? ' · ocupado' : ''}
+              </button>
+            )
+          })}
         </div>
 
         {/* Sombra base — aparece quando tem conteúdo abaixo */}
@@ -98,11 +102,12 @@ const DropdownList = React.forwardRef<
   )
 })
 
-function CustomSelect({ value, onChange, options, placeholder }: {
+function CustomSelect({ value, onChange, options, placeholder, disabledValues }: {
   value: string
   onChange: (v: string) => void
   options: SelectOption[]
   placeholder?: string
+  disabledValues?: Set<string>
 }) {
   const [open, setOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -157,6 +162,7 @@ function CustomSelect({ value, onChange, options, placeholder }: {
           options={options}
           value={value}
           onChange={v => { onChange(v); setOpen(false) }}
+          disabledValues={disabledValues}
         />,
         document.body
       )}
@@ -198,6 +204,7 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
   const [doctorId, setDoctorId] = useState('')
   const [saving,   setSaving]   = useState(false)
   const [conflictMsg, setConflictMsg] = useState('')
+  const [busySlots, setBusySlots] = useState<Set<string>>(new Set())
   const [dateOpen, setDateOpen] = useState(false)
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -254,23 +261,65 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
     toast.error('Selecione ou crie um paciente'); return null
   }
 
-  async function checkConflict(doctorId: string, startsAt: string, durationMin: number, excludeId?: string): Promise<boolean> {
+  // Carregar slots ocupados do dia para o médico selecionado
+  async function loadBusySlots(docId: string, dayDate: string, dur: number, excludeId?: string) {
+    const dayStart = `${dayDate}T00:00:00`
+    const dayEnd = `${dayDate}T23:59:59`
+
+    let query = supabase
+      .from('appointments')
+      .select('id, starts_at, duration_minutes')
+      .eq('doctor_id', docId)
+      .neq('status', 'cancelled')
+      .gte('starts_at', dayStart)
+      .lte('starts_at', dayEnd)
+
+    if (excludeId) query = query.neq('id', excludeId)
+
+    const { data } = await query
+    if (!data) { setBusySlots(new Set()); return }
+
+    const busy = new Set<string>()
+    for (const apt of data as { starts_at: string; duration_minutes: number }[]) {
+      const aptStart = new Date(apt.starts_at)
+      const aptEnd = new Date(aptStart.getTime() + apt.duration_minutes * 60000)
+
+      // Marcar todos os slots de 15min que conflitam com esta consulta
+      for (const slot of TIME_OPTIONS) {
+        const slotStart = new Date(`${dayDate}T${slot.value}:00`)
+        const slotEnd = new Date(slotStart.getTime() + dur * 60000)
+        // Conflito: se o slot+duração sobrepõe a consulta existente
+        if (slotEnd > aptStart && slotStart < aptEnd) {
+          busy.add(slot.value)
+        }
+      }
+    }
+    setBusySlots(busy)
+  }
+
+  // Recarregar slots quando mudar médico, data ou duração
+  useEffect(() => {
+    if (doctorId && date && !isWalkIn) {
+      loadBusySlots(doctorId, date, parseInt(duration), editAppointment?.id)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doctorId, date, duration, isWalkIn])
+
+  async function checkConflict(docId: string, startsAt: string, durationMin: number, excludeId?: string): Promise<boolean> {
     const startTime = new Date(startsAt)
     const endTime = new Date(startTime.getTime() + durationMin * 60000)
+    const dayDate = startsAt.slice(0, 10)
 
-    // Buscar todas as consultas do médico no mesmo dia para calcular próximo horário
-    const dayStart = new Date(startTime)
-    dayStart.setHours(0, 0, 0, 0)
-    const dayEnd = new Date(startTime)
-    dayEnd.setHours(23, 59, 59, 999)
+    const dayStart = `${dayDate}T00:00:00`
+    const dayEnd = `${dayDate}T23:59:59`
 
     let query = supabase
       .from('appointments')
       .select('id, starts_at, duration_minutes, patient:patients(name)')
-      .eq('doctor_id', doctorId)
+      .eq('doctor_id', docId)
       .neq('status', 'cancelled')
-      .gte('starts_at', dayStart.toISOString())
-      .lte('starts_at', dayEnd.toISOString())
+      .gte('starts_at', dayStart)
+      .lte('starts_at', dayEnd)
       .order('starts_at', { ascending: true })
 
     if (excludeId) query = query.neq('id', excludeId)
@@ -278,6 +327,7 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
     const { data } = await query
     if (!data) return false
 
+    // Checar conflito
     const conflict = data.find((apt: { starts_at: string; duration_minutes: number }) => {
       const aptStart = new Date(apt.starts_at)
       const aptEnd = new Date(aptStart.getTime() + apt.duration_minutes * 60000)
@@ -288,17 +338,35 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
       const patient = Array.isArray(conflict.patient) ? conflict.patient[0] : conflict.patient
       const patientName = (patient as { name?: string })?.name ?? 'outro paciente'
 
-      // Calcular próximo horário disponível após o conflito
-      const conflictEnd = new Date(new Date(conflict.starts_at).getTime() + conflict.duration_minutes * 60000)
-      const nextAvailable = new Date(conflictEnd)
-      // Arredondar para próximo slot de 15 min
-      const mins = nextAvailable.getMinutes()
-      const remainder = mins % 15
-      if (remainder > 0) nextAvailable.setMinutes(mins + (15 - remainder), 0, 0)
+      // Encontrar o próximo horário REALMENTE livre (iterar slots de 15min)
+      const allApts = data as { starts_at: string; duration_minutes: number }[]
+      let nextTime = ''
 
-      const nextTime = nextAvailable.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      for (const slot of TIME_OPTIONS) {
+        const slotStart = new Date(`${dayDate}T${slot.value}:00`)
+        const slotEnd = new Date(slotStart.getTime() + durationMin * 60000)
 
-      setConflictMsg(`Conflito com ${patientName}. Próximo horário disponível: ${nextTime}`)
+        // Pular slots antes do horário tentado
+        if (slotStart <= startTime) continue
+
+        // Checar se este slot conflita com alguma consulta
+        const hasConflict = allApts.some(a => {
+          const aStart = new Date(a.starts_at)
+          const aEnd = new Date(aStart.getTime() + a.duration_minutes * 60000)
+          return slotEnd > aStart && slotStart < aEnd
+        })
+
+        if (!hasConflict) {
+          nextTime = slot.value
+          break
+        }
+      }
+
+      if (nextTime) {
+        setConflictMsg(`Conflito com ${patientName}. Próximo horário livre: ${nextTime}`)
+      } else {
+        setConflictMsg(`Conflito com ${patientName}. Sem horários disponíveis neste dia.`)
+      }
       return true
     }
     setConflictMsg('')
@@ -506,7 +574,7 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className={labelCls}>Hora</label>
-                <CustomSelect value={time} onChange={setTime} options={TIME_OPTIONS} />
+                <CustomSelect value={time} onChange={v => { setTime(v); setConflictMsg('') }} options={TIME_OPTIONS} disabledValues={busySlots} />
               </div>
               <div className="flex-1">
                 <label className={labelCls}>Duração</label>

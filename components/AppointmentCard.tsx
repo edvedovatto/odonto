@@ -107,9 +107,9 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
           {!isScheduled && (
             <div className={cn('w-1 shrink-0', isAttended && 'bg-green-500', isCancelled && 'bg-red-400')} />
           )}
-          <div className="flex-1 px-4 py-3.5">
+          <div className="flex-1 min-w-0 px-4 py-3.5">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 overflow-hidden">
                 <p className={cn('text-xs font-medium tabular-nums mb-1', isScheduled ? 'text-white/60' : 'text-muted-foreground')}>
                   {showDate ? `${formatDate(apt.starts_at)} · ` : ''}{formatTime(apt.starts_at)} · {apt.duration_minutes} min
                 </p>
