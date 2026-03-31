@@ -53,6 +53,16 @@ const items = [
     ),
   },
   {
+    href: '/history',
+    label: 'Histórico',
+    icon: (active: boolean) => (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    ),
+  },
+  {
     href: '/config',
     label: 'Config',
     icon: (active: boolean) => (
