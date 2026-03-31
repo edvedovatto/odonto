@@ -189,6 +189,7 @@ export default function PatientDetailPage() {
         defaultDate={new Date().toISOString().slice(0, 10)}
         doctors={doctors}
         currentUser={currentUser}
+        defaultPatient={patient}
         onCreated={async () => {
           const { data } = await supabase
             .from('appointments')

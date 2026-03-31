@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase'
 import { Sheet, SheetContent, SheetClose, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import type { Patient, User, Appointment } from '@/lib/types'
-import { cn, maskCpf, sanitizeSearch } from '@/lib/utils'
+import { cn, maskCpf, sanitizeSearch, maskPhoneInput, maskCpfInput } from '@/lib/utils'
 import { toast } from 'sonner'
 import CalendarInline from '@/components/CalendarInline'
 
@@ -19,6 +19,7 @@ interface Props {
   currentUser: User | null
   onCreated: () => void
   editAppointment?: Appointment
+  defaultPatient?: Patient
 }
 
 // Horários de 07:30 a 22:45, de 15 em 15 min
@@ -181,7 +182,7 @@ function CollapseRow({ icon, label, open, onToggle }: { icon: React.ReactNode; l
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, doctors, currentUser, onCreated, editAppointment }: Props) {
+export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, doctors, currentUser, onCreated, editAppointment, defaultPatient }: Props) {
   const supabase = createClient()
   const [isWalkIn,        setIsWalkIn]        = useState(false)
   const [patientSearch,   setPatientSearch]   = useState('')
@@ -210,8 +211,10 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
       setDuration(String(editAppointment.duration_minutes))
       setDoctorId(editAppointment.doctor_id)
       setIsWalkIn(false)
+    } else if (open && defaultPatient) {
+      setSelectedPatient(defaultPatient)
     }
-  }, [open, editAppointment])
+  }, [open, editAppointment, defaultPatient])
 
   useEffect(() => {
     if (!patientSearch.trim() || selectedPatient) { setPatientResults([]); return }
@@ -235,11 +238,14 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
 
   async function getOrCreatePatient(): Promise<string | null> {
     if (selectedPatient) return selectedPatient.id
-    if (showNewPatient && newName.trim()) {
+    if (showNewPatient && newName.trim().length >= 3) {
+      const rawPhone = newPhone.replace(/\D/g, '')
+      const rawCpf = newCpf.replace(/\D/g, '') || null
+      if (rawPhone.length < 10) { toast.error('Telefone é obrigatório'); return null }
       const { data: mb } = await supabase.from('clinic_members').select('clinic_id')
         .eq('user_id', currentUser?.id ?? '').single()
       const { data, error } = await supabase.from('patients')
-        .insert({ name: newName.trim(), phone: newPhone || null, cpf: newCpf || null, clinic_id: mb?.clinic_id })
+        .insert({ name: newName.trim().slice(0, 100), phone: rawPhone, cpf: rawCpf, clinic_id: mb?.clinic_id })
         .select().single()
       if (error) { toast.error('Erro ao criar paciente'); return null }
       return data.id
@@ -338,7 +344,7 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
   }
 
   const isDentist   = currentUser?.role === 'dentist'
-  const hasPatient  = !!selectedPatient || (showNewPatient && newName.trim().length > 0)
+  const hasPatient  = !!selectedPatient || (showNewPatient && newName.trim().length >= 3 && newPhone.replace(/\D/g, '').length >= 10)
   const hasDoctor   = isDentist || !!doctorId
   const isFormValid = hasPatient && hasDoctor
 
@@ -431,11 +437,11 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
                 </div>
                 <div className="p-3 space-y-2">
                   <input className={fieldCls} placeholder="Nome completo *" value={newName}
-                    onChange={e => setNewName(e.target.value)} />
-                  <input className={fieldCls} placeholder="Telefone" value={newPhone}
-                    onChange={e => setNewPhone(e.target.value)} type="tel" inputMode="tel" />
+                    onChange={e => setNewName(e.target.value.slice(0, 100))} maxLength={100} />
+                  <input className={fieldCls} placeholder="Telefone *" value={newPhone}
+                    onChange={e => setNewPhone(maskPhoneInput(e.target.value))} type="tel" inputMode="tel" />
                   <input className={fieldCls} placeholder="CPF (opcional)" value={newCpf}
-                    onChange={e => setNewCpf(e.target.value)} inputMode="numeric" maxLength={14} />
+                    onChange={e => setNewCpf(maskCpfInput(e.target.value))} inputMode="numeric" maxLength={14} />
                 </div>
               </div>
             )}
