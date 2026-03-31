@@ -8,35 +8,38 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import Image from 'next/image'
+import { cn } from '@/lib/utils'
 
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+
+  function validate() {
+    const e: { email?: string; password?: string } = {}
+    const emailTrimmed = email.trim()
+    if (!emailTrimmed) {
+      e.email = 'E-mail é obrigatório'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+      e.email = 'Digite um e-mail válido'
+    }
+    if (!password) {
+      e.password = 'Senha é obrigatória'
+    } else if (password.length < 6) {
+      e.password = 'A senha deve ter pelo menos 6 caracteres'
+    }
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    const emailTrimmed = email.trim()
-    if (!emailTrimmed) {
-      toast.error('E-mail é obrigatório')
-      return
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
-      toast.error('Digite um e-mail válido')
-      return
-    }
-    if (!password) {
-      toast.error('Senha é obrigatória')
-      return
-    }
-    if (password.length < 6) {
-      toast.error('A senha deve ter pelo menos 6 caracteres')
-      return
-    }
+    if (!validate()) return
     setLoading(true)
     const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email: emailTrimmed, password })
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
     if (error) {
       toast.error('E-mail ou senha incorretos')
       setLoading(false)
@@ -49,26 +52,25 @@ export default function LoginPage() {
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center p-6 bg-background">
       <div className="w-full max-w-sm">
-        {/* Logo */}
         <div className="flex justify-center mb-8">
           <Image src="/logo.png" alt="Bio Odontologia" width={240} height={150} className="h-32 w-auto object-contain" priority />
         </div>
 
         <p className="text-muted-foreground text-center text-sm mb-8">Entre na sua conta</p>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} noValidate className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email" className="text-sm font-medium">E-mail</Label>
             <Input
               id="email"
               type="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={e => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })) }}
               placeholder="seu@email.com"
               autoComplete="email"
-              className="h-12 rounded-xl bg-white border-border text-base"
-              required
+              className={cn('h-12 rounded-xl bg-white text-base', errors.email ? 'border-destructive focus-visible:ring-destructive/30' : 'border-border')}
             />
+            {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
@@ -76,12 +78,12 @@ export default function LoginPage() {
               id="password"
               type="password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={e => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: undefined })) }}
               placeholder="••••••••"
               autoComplete="current-password"
-              className="h-12 rounded-xl bg-white border-border text-base"
-              required
+              className={cn('h-12 rounded-xl bg-white text-base', errors.password ? 'border-destructive focus-visible:ring-destructive/30' : 'border-border')}
             />
+            {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
           </div>
           <Button
             type="submit"
