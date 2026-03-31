@@ -22,7 +22,7 @@ export function shareWhatsApp(apt: Appointment) {
     `*Data:* ${formatDate(apt.starts_at)}`,
     `*Horário:* ${formatTime(apt.starts_at)}`,
     `*Endereço:* Rua dos Andradas, 1519 - sala 82, Centro Histórico, Porto Alegre`,
-    `https://share.google/Xd5me7S79e0mTKq0o`,
+    `https://maps.app.goo.gl/w32cvgaom1ah9yvs9`,
     ``,
     `Até lá!`,
   ]
