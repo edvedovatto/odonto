@@ -185,7 +185,7 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
                     key={s}
                     onClick={() => updateStatus(s)}
                     className={cn(
-                      'flex-1 h-12 rounded-xl text-sm font-semibold border transition-all',
+                      'flex-1 h-14 rounded-2xl text-sm font-semibold border transition-all',
                       apt.status === s
                         ? s === 'attended' ? 'bg-green-500 text-white border-green-500'
                           : s === 'cancelled' ? 'bg-red-500 text-white border-red-500'
@@ -204,7 +204,7 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
                     key={s}
                     onClick={() => updateStatus(s)}
                     className={cn(
-                      'flex-1 h-12 rounded-xl text-sm font-semibold border transition-all',
+                      'flex-1 h-14 rounded-2xl text-sm font-semibold border transition-all',
                       apt.status === s
                         ? s === 'attended' ? 'bg-green-500 text-white border-green-500' : 'bg-primary text-white border-primary'
                         : 'bg-background text-muted-foreground border-border'
@@ -277,7 +277,7 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
                         type="button"
                         onClick={() => setMethod(m)}
                         className={cn(
-                          'flex-1 h-12 rounded-xl text-sm font-semibold border transition-all',
+                          'flex-1 h-14 rounded-2xl text-sm font-semibold border transition-all',
                           method === m ? 'bg-primary text-white border-primary' : 'bg-background text-muted-foreground border-border'
                         )}
                       >
@@ -297,10 +297,10 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
           <div className="mb-6">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Compartilhar</p>
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1 h-12 rounded-xl font-semibold" onClick={() => shareWhatsApp(apt)}>
+              <Button variant="outline" className="flex-1 h-14 rounded-2xl font-semibold" onClick={() => shareWhatsApp(apt)}>
                 WhatsApp
               </Button>
-              <Button variant="outline" className="flex-1 h-12 rounded-xl font-semibold" onClick={() => generateICS(apt)}>
+              <Button variant="outline" className="flex-1 h-14 rounded-2xl font-semibold" onClick={() => generateICS(apt)}>
                 Calendário
               </Button>
             </div>
