@@ -26,11 +26,17 @@ self.addEventListener('activate', (event) => {
 })
 
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url)
+
+  // Skip API calls, auth, and manifest
+  if (url.pathname.startsWith('/auth') || url.pathname === '/manifest.json' || url.pathname.startsWith('/api')) {
+    return
+  }
+
   // Network first, fallback to cache
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Cache successful GET requests
         if (event.request.method === 'GET' && response.status === 200) {
           const clone = response.clone()
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))

@@ -1,7 +1,7 @@
 {
   "name": "Odonto",
   "short_name": "Odonto",
-  "description": "Agenda da clínica",
+  "description": "Agenda da clinica",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
