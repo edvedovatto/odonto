@@ -92,10 +92,5 @@
   button, a, [role="button"] {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
-    transition: transform 100ms ease, opacity 100ms ease;
-  }
-  button:active, a:active, [role="button"]:active {
-    transform: scale(0.97);
-    opacity: 0.85;
   }
 }

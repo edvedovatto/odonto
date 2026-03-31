@@ -220,61 +220,77 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
           {/* Pagamento */}
           <div className="mb-6">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Pagamento</p>
-            <div className="space-y-3">
+            {isPaid ? (
               <div>
-                <p className="text-sm text-muted-foreground mb-1.5">Valor (R$)</p>
-                <Input
-                  type="text"
-                  placeholder="0,00"
-                  value={payValue}
-                  onChange={e => {
-                    let raw = e.target.value.replace(/[^\d,]/g, '')
-                    const commaIdx = raw.indexOf(',')
-                    if (commaIdx !== -1) {
-                      raw = raw.slice(0, commaIdx + 1) + raw.slice(commaIdx + 1).replace(/,/g, '').slice(0, 2)
-                    }
-                    const [intPart = '', decPart] = raw.split(',')
-                    const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-                    setPayValue(decPart !== undefined ? `${formatted},${decPart}` : formatted)
-                  }}
-                  inputMode="decimal"
-                  className="h-12 rounded-xl text-sm font-medium"
-                  onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-                  onBlur={() => {
-                    if (payValue && !payValue.includes(',')) setPayValue(payValue + ',00')
-                  }}
-                />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1.5">Tipo</p>
-                <div className="flex gap-2">
-                  {(['pix', 'cash', 'card'] as PaymentMethod[]).map(m => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setMethod(m)}
-                      className={cn(
-                        'flex-1 h-12 rounded-xl text-sm font-semibold border transition-all',
-                        method === m ? 'bg-primary text-white border-primary' : 'bg-background text-muted-foreground border-border'
-                      )}
-                    >
-                      {methodLabel[m]}
-                    </button>
-                  ))}
+                <div className="rounded-2xl bg-green-50 border border-green-200 p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-green-700">Pago</p>
+                    <p className="text-sm text-green-600">
+                      {apt.value ? formatCurrency(apt.value) : ''}{apt.payment_method ? ` · ${methodLabel[apt.payment_method]}` : ''}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <Button className="w-full h-12 rounded-xl font-bold" onClick={savePayment} disabled={saving}>
-                {saving ? 'Salvando…' : 'Marcar como pago'}
-              </Button>
-              {isPaid && (
                 <button
                   onClick={removePayment}
-                  className="w-full text-sm text-muted-foreground underline underline-offset-2 py-1"
+                  className="w-full mt-2 text-sm text-muted-foreground underline underline-offset-2 py-1"
                 >
                   Remover pagamento
                 </button>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1.5">Valor (R$)</p>
+                  <Input
+                    type="text"
+                    placeholder="0,00"
+                    value={payValue}
+                    onChange={e => {
+                      let raw = e.target.value.replace(/[^\d,]/g, '')
+                      const commaIdx = raw.indexOf(',')
+                      if (commaIdx !== -1) {
+                        raw = raw.slice(0, commaIdx + 1) + raw.slice(commaIdx + 1).replace(/,/g, '').slice(0, 2)
+                      }
+                      const [intPart = '', decPart] = raw.split(',')
+                      const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+                      setPayValue(decPart !== undefined ? `${formatted},${decPart}` : formatted)
+                    }}
+                    inputMode="decimal"
+                    className="h-12 rounded-xl text-sm font-medium"
+                    onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
+                    onBlur={() => {
+                      if (payValue && !payValue.includes(',')) setPayValue(payValue + ',00')
+                    }}
+                  />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1.5">Tipo</p>
+                  <div className="flex gap-2">
+                    {(['pix', 'cash', 'card'] as PaymentMethod[]).map(m => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setMethod(m)}
+                        className={cn(
+                          'flex-1 h-12 rounded-xl text-sm font-semibold border transition-all',
+                          method === m ? 'bg-primary text-white border-primary' : 'bg-background text-muted-foreground border-border'
+                        )}
+                      >
+                        {methodLabel[m]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <Button className="w-full h-14 rounded-2xl font-bold" onClick={savePayment} disabled={saving}>
+                  {saving ? 'Salvando…' : 'Marcar como pago'}
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Compartilhar */}
