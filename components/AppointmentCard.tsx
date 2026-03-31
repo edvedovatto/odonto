@@ -310,7 +310,7 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
           {!isCancelled && (
             <button
               onClick={() => setCancelConfirmOpen(true)}
-              className="w-full h-14 rounded-2xl bg-red-50 border border-red-200 text-red-500 text-sm font-semibold flex items-center justify-center active:bg-red-100 transition-colors"
+              className="w-full min-h-[56px] rounded-2xl bg-red-50 border border-red-200 text-red-500 text-sm font-semibold flex items-center justify-center active:bg-red-100 transition-colors"
             >
               Cancelar consulta
             </button>
