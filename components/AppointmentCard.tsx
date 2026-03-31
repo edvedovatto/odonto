@@ -160,7 +160,7 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
           {isScheduled && (
             <button
               onClick={() => { setOpen(false); setTimeout(() => setEditOpen(true), 200) }}
-              className="w-full h-12 rounded-xl border border-border flex items-center justify-between px-4 mb-6 text-sm font-semibold text-foreground active:bg-muted transition-colors"
+              className="w-full h-14 rounded-2xl bg-muted flex items-center justify-between px-4 mb-6 text-sm font-semibold text-foreground active:bg-muted/70 transition-colors"
             >
               <span className="flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -294,7 +294,7 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
           {!isCancelled && (
             <button
               onClick={() => setCancelConfirmOpen(true)}
-              className="w-full h-12 rounded-xl border border-red-200 text-red-500 text-sm font-semibold flex items-center justify-center"
+              className="w-full h-14 rounded-2xl bg-red-50 border border-red-200 text-red-500 text-sm font-semibold flex items-center justify-center active:bg-red-100 transition-colors"
             >
               Cancelar consulta
             </button>

@@ -3,28 +3,51 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import { cn, formatCurrency } from '@/lib/utils'
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 import AppointmentCard from '@/components/AppointmentCard'
 import type { Appointment, User } from '@/lib/types'
 
 const PAGE_SIZE = 20
+const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
-type DoctorFilter = string // 'all' | doctor_id
 type PaymentFilter = 'all' | 'paid' | 'unpaid'
 
 export default function HistoryPage() {
   const supabase = createClient()
+
+  // Mês selecionado
+  const now = new Date()
+  const [viewYear, setViewYear] = useState(now.getFullYear())
+  const [viewMonth, setViewMonth] = useState(now.getMonth())
+
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [doctors, setDoctors] = useState<User[]>([])
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
-  const [selectedDoctor, setSelectedDoctor] = useState<DoctorFilter>('all')
+  const [selectedDoctor, setSelectedDoctor] = useState('all')
+  const [doctorOpen, setDoctorOpen] = useState(false)
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('all')
   const sentinelRef = useRef<HTMLDivElement>(null)
 
-  // KPIs do mês atual
-  const [kpis, setKpis] = useState({ attended: 0, revenue: 0, unpaid: 0 })
+  // KPIs
+  const [kpis, setKpis] = useState({ total: 0, attended: 0, revenue: 0, unpaid: 0, unpaidValue: 0 })
+
+  // Helpers de range do mês
+  const monthStart = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-01T00:00:00`
+  const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate()
+  const monthEnd = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}T23:59:59`
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) }
+    else setViewMonth(m => m - 1)
+  }
+  function nextMonth() {
+    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0) }
+    else setViewMonth(m => m + 1)
+  }
 
   const loadUser = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -54,26 +77,31 @@ export default function HistoryPage() {
   }, [supabase])
 
   const loadKpis = useCallback(async () => {
-    const now = new Date()
-    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01T00:00:00`
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    const monthEndStr = `${monthEnd.getFullYear()}-${String(monthEnd.getMonth() + 1).padStart(2, '0')}-${String(monthEnd.getDate()).padStart(2, '0')}T23:59:59`
-
-    const { data } = await supabase
+    let query = supabase
       .from('appointments')
       .select('status, payment_status, value')
       .gte('starts_at', monthStart)
-      .lte('starts_at', monthEndStr)
+      .lte('starts_at', monthEnd)
       .neq('status', 'cancelled')
 
+    if (currentUser?.role === 'dentist') {
+      query = query.eq('doctor_id', currentUser.id)
+    } else if (selectedDoctor !== 'all') {
+      query = query.eq('doctor_id', selectedDoctor)
+    }
+
+    const { data } = await query
     if (data) {
       type KpiRow = { status: string; payment_status: string; value: number | null }
+      const total = data.length
       const attended = data.filter((a: KpiRow) => a.status === 'attended').length
       const revenue = data.filter((a: KpiRow) => a.payment_status === 'paid').reduce((sum: number, a: KpiRow) => sum + (a.value ?? 0), 0)
-      const unpaid = data.filter((a: KpiRow) => a.payment_status === 'unpaid' && a.status === 'attended').length
-      setKpis({ attended, revenue, unpaid })
+      const unpaidItems = data.filter((a: KpiRow) => a.payment_status === 'unpaid' && a.status === 'attended')
+      const unpaid = unpaidItems.length
+      const unpaidValue = unpaidItems.reduce((sum: number, a: KpiRow) => sum + (a.value ?? 0), 0)
+      setKpis({ total, attended, revenue, unpaid, unpaidValue })
     }
-  }, [supabase])
+  }, [supabase, monthStart, monthEnd, currentUser, selectedDoctor])
 
   const loadAppointments = useCallback(async (offset: number, reset = false) => {
     if (offset === 0) setLoading(true)
@@ -82,6 +110,8 @@ export default function HistoryPage() {
     let query = supabase
       .from('appointments')
       .select('*, patient:patients(id, name, phone, cpf, photo_url), doctor:users(id, name, email, role)')
+      .gte('starts_at', monthStart)
+      .lte('starts_at', monthEnd)
       .neq('status', 'cancelled')
       .order('starts_at', { ascending: false })
       .range(offset, offset + PAGE_SIZE - 1)
@@ -96,24 +126,20 @@ export default function HistoryPage() {
     if (paymentFilter === 'unpaid') query = query.eq('payment_status', 'unpaid')
 
     const { data } = await query
-
     const newData = (data as Appointment[]) ?? []
-    if (reset) {
-      setAppointments(newData)
-    } else {
-      setAppointments(prev => [...prev, ...newData])
-    }
+    if (reset) setAppointments(newData)
+    else setAppointments(prev => [...prev, ...newData])
     setHasMore(newData.length === PAGE_SIZE)
     setLoading(false)
     setLoadingMore(false)
-  }, [supabase, currentUser, selectedDoctor, paymentFilter])
+  }, [supabase, currentUser, selectedDoctor, paymentFilter, monthStart, monthEnd])
 
   useEffect(() => { loadUser() }, [loadUser])
-  useEffect(() => { if (currentUser) { loadDoctors(); loadKpis() } }, [currentUser, loadDoctors, loadKpis])
+  useEffect(() => { if (currentUser) loadDoctors() }, [currentUser, loadDoctors])
   useEffect(() => {
-    if (currentUser) loadAppointments(0, true)
+    if (currentUser) { loadKpis(); loadAppointments(0, true) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser, selectedDoctor, paymentFilter])
+  }, [currentUser, selectedDoctor, paymentFilter, viewYear, viewMonth])
 
   // Infinite scroll
   useEffect(() => {
@@ -148,8 +174,7 @@ export default function HistoryPage() {
   }
 
   const isDentist = currentUser?.role === 'dentist'
-  const now = new Date()
-  const monthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  const selectedDoctorName = selectedDoctor === 'all' ? 'Todos os médicos' : doctors.find(d => d.id === selectedDoctor)?.name ?? ''
 
   const paymentOptions: { value: PaymentFilter; label: string }[] = [
     { value: 'all', label: 'Todos' },
@@ -162,51 +187,70 @@ export default function HistoryPage() {
       {/* Header */}
       <div className="px-5 pt-14 pb-5 bg-primary text-white">
         <h1 className="text-[2rem] font-bold tracking-tight leading-tight">Histórico</h1>
-        <p className="text-white/55 text-sm mt-1 capitalize">{monthLabel}</p>
+
+        {/* Navegação por mês */}
+        <div className="flex items-center justify-between mt-3">
+          <button onClick={prevMonth} className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/15 active:bg-white/25">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <p className="font-bold text-base">{MONTHS_PT[viewMonth]} {viewYear}</p>
+          <button onClick={nextMonth} className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/15 active:bg-white/25">
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-3 gap-2.5 mt-4">
-          <div className="bg-white/15 rounded-xl px-3 py-2.5 text-center">
-            <p className="text-xl font-bold">{kpis.attended}</p>
-            <p className="text-[11px] text-white/60 font-medium">Atendidos</p>
+        <div className="grid grid-cols-2 gap-2.5 mt-4">
+          <div className="bg-white/15 rounded-xl px-3 py-3">
+            <p className="text-2xl font-bold">{kpis.total}</p>
+            <p className="text-[11px] text-white/60 font-medium mt-0.5">Consultas no mês</p>
           </div>
-          <div className="bg-white/15 rounded-xl px-3 py-2.5 text-center">
-            <p className="text-xl font-bold">{formatCurrency(kpis.revenue).replace('R$\u00a0', 'R$ ')}</p>
-            <p className="text-[11px] text-white/60 font-medium">Recebido</p>
+          <div className="bg-white/15 rounded-xl px-3 py-3">
+            <p className="text-2xl font-bold">{kpis.attended}</p>
+            <p className="text-[11px] text-white/60 font-medium mt-0.5">Atendidas</p>
           </div>
-          <div className="bg-white/15 rounded-xl px-3 py-2.5 text-center">
-            <p className="text-xl font-bold text-red-300">{kpis.unpaid}</p>
-            <p className="text-[11px] text-white/60 font-medium">Não pagos</p>
+          <div className="bg-green-500/20 rounded-xl px-3 py-3">
+            <p className="text-2xl font-bold">{formatCurrency(kpis.revenue)}</p>
+            <p className="text-[11px] text-white/60 font-medium mt-0.5">Recebido</p>
+          </div>
+          <div className="bg-red-500/20 rounded-xl px-3 py-3">
+            <p className="text-2xl font-bold">{kpis.unpaid}</p>
+            <p className="text-[11px] text-white/60 font-medium mt-0.5">Não pagos</p>
           </div>
         </div>
       </div>
 
       {/* Filtros */}
-      <div className="px-5 py-3 space-y-2 bg-white border-b border-border">
-        {/* Médico */}
+      <div className="px-5 py-3 space-y-2.5 bg-white border-b border-border">
+        {/* Médico — dropdown */}
         {!isDentist && doctors.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto scrollbar-none">
+          <div className="relative">
             <button
-              onClick={() => setSelectedDoctor('all')}
-              className={cn(
-                'shrink-0 px-3.5 py-1.5 rounded-full text-sm font-semibold transition-colors',
-                selectedDoctor === 'all' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
-              )}
+              onClick={() => setDoctorOpen(v => !v)}
+              className="w-full h-11 rounded-xl border border-border bg-background px-4 text-sm font-medium flex items-center justify-between"
             >
-              Todos
+              <span>{selectedDoctorName}</span>
+              <ChevronDown className={cn('w-4 h-4 text-muted-foreground transition-transform', doctorOpen && 'rotate-180')} />
             </button>
-            {doctors.map(d => (
-              <button
-                key={d.id}
-                onClick={() => setSelectedDoctor(d.id)}
-                className={cn(
-                  'shrink-0 px-3.5 py-1.5 rounded-full text-sm font-semibold transition-colors',
-                  selectedDoctor === d.id ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
-                )}
-              >
-                {d.name.split(' ')[0]}
-              </button>
-            ))}
+            {doctorOpen && (
+              <div className="mt-1.5 border border-border rounded-xl bg-white overflow-hidden">
+                <button
+                  onClick={() => { setSelectedDoctor('all'); setDoctorOpen(false) }}
+                  className={cn('w-full text-left px-4 py-3 text-sm font-medium border-b border-border', selectedDoctor === 'all' && 'bg-muted')}
+                >
+                  Todos os médicos
+                </button>
+                {doctors.map(d => (
+                  <button
+                    key={d.id}
+                    onClick={() => { setSelectedDoctor(d.id); setDoctorOpen(false) }}
+                    className={cn('w-full text-left px-4 py-3 text-sm font-medium border-b border-border last:border-0', selectedDoctor === d.id && 'bg-muted')}
+                  >
+                    {d.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -217,7 +261,7 @@ export default function HistoryPage() {
               key={opt.value}
               onClick={() => setPaymentFilter(opt.value)}
               className={cn(
-                'shrink-0 px-3.5 py-1.5 rounded-full text-sm font-semibold transition-colors',
+                'flex-1 py-2 rounded-xl text-sm font-semibold transition-colors',
                 paymentFilter === opt.value ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
               )}
             >
@@ -243,7 +287,7 @@ export default function HistoryPage() {
               </svg>
             </div>
             <p className="font-bold text-foreground mb-1">Nenhum atendimento</p>
-            <p className="text-sm text-muted-foreground">Sem resultados para os filtros selecionados</p>
+            <p className="text-sm text-muted-foreground">Sem resultados para {MONTHS_PT[viewMonth]}</p>
           </div>
         ) : (
           <div className="space-y-5">
@@ -267,7 +311,6 @@ export default function HistoryPage() {
               </div>
             ))}
 
-            {/* Sentinel para infinite scroll */}
             <div ref={sentinelRef} className="h-1" />
 
             {loadingMore && (
