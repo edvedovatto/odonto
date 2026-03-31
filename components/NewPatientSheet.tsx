@@ -97,6 +97,7 @@ export default function NewPatientSheet({ open, onOpenChange, onCreated, default
               placeholder="Nome completo"
               value={name}
               onChange={e => { setName(e.target.value.slice(0, 100)); if (nameError) setNameError('') }}
+              onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
               autoComplete="off"
             />
             {nameError && <p className="mt-1.5 text-xs text-red-500 font-medium">{nameError}</p>}
@@ -109,6 +110,7 @@ export default function NewPatientSheet({ open, onOpenChange, onCreated, default
               placeholder="(11) 99999-9999"
               value={phone}
               onChange={e => { setPhone(maskPhoneInput(e.target.value)); if (phoneError) setPhoneError('') }}
+              onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
               inputMode="tel"
             />
             {phoneError && <p className="mt-1.5 text-xs text-red-500 font-medium">{phoneError}</p>}
@@ -120,6 +122,7 @@ export default function NewPatientSheet({ open, onOpenChange, onCreated, default
               placeholder="000.000.000-00"
               value={cpf}
               onChange={e => setCpf(maskCpfInput(e.target.value))}
+              onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
               inputMode="numeric"
               maxLength={14}
             />

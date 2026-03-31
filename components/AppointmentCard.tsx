@@ -239,6 +239,7 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
                   }}
                   inputMode="decimal"
                   className="h-12 rounded-xl text-sm font-medium"
+                  onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                   onBlur={() => {
                     if (payValue && !payValue.includes(',')) setPayValue(payValue + ',00')
                   }}

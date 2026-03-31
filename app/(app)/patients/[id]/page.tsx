@@ -244,6 +244,7 @@ export default function PatientDetailPage() {
                 onChange={e => setEditName(e.target.value.slice(0, 100))}
                 placeholder="Nome completo"
                 className="h-12 rounded-xl text-sm font-medium"
+                onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
               />
             </div>
             <div>
@@ -255,6 +256,7 @@ export default function PatientDetailPage() {
                 type="tel"
                 inputMode="tel"
                 className="h-12 rounded-xl text-sm font-medium"
+                onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
               />
             </div>
             <div>

@@ -402,9 +402,10 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
                   placeholder="Nome, telefone ou CPF…"
                   value={patientSearch}
                   onChange={e => { setPatientSearch(e.target.value); setShowNewPatient(false) }}
+                  onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300)}
                   autoComplete="off" />
                 {patientResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-1.5 bg-white border border-border rounded-2xl shadow-xl overflow-hidden">
+                  <div className="absolute bottom-full left-0 right-0 z-50 mb-1.5 bg-white border border-border rounded-2xl shadow-xl overflow-hidden max-h-[40vh] overflow-y-auto">
                     {patientResults.map(p => (
                       <button key={p.id} type="button"
                         onClick={() => { setSelectedPatient(p); setPatientSearch(''); setPatientResults([]) }}
@@ -437,11 +438,14 @@ export default function NewAppointmentSheet({ open, onOpenChange, defaultDate, d
                 </div>
                 <div className="p-3 space-y-2">
                   <input className={fieldCls} placeholder="Nome completo *" value={newName}
-                    onChange={e => setNewName(e.target.value.slice(0, 100))} maxLength={100} />
+                    onChange={e => setNewName(e.target.value.slice(0, 100))} maxLength={100}
+                    onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)} />
                   <input className={fieldCls} placeholder="Telefone *" value={newPhone}
-                    onChange={e => setNewPhone(maskPhoneInput(e.target.value))} type="tel" inputMode="tel" />
+                    onChange={e => setNewPhone(maskPhoneInput(e.target.value))} type="tel" inputMode="tel"
+                    onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)} />
                   <input className={fieldCls} placeholder="CPF (opcional)" value={newCpf}
-                    onChange={e => setNewCpf(maskCpfInput(e.target.value))} inputMode="numeric" maxLength={14} />
+                    onChange={e => setNewCpf(maskCpfInput(e.target.value))} inputMode="numeric" maxLength={14}
+                    onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)} />
                 </div>
               </div>
             )}
