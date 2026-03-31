@@ -129,8 +129,8 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
                   <span className={cn('text-xs font-semibold', isScheduled ? 'text-white/90' : 'text-green-600')}>
                     {apt.value ? formatCurrency(apt.value) : 'Pago'}
                   </span>
-                ) : isAttended ? (
-                  <span className="text-xs text-muted-foreground">Não pago</span>
+                ) : !isCancelled ? (
+                  <span className={cn('text-xs', isScheduled ? 'text-white/50' : 'text-muted-foreground')}>Não pago</span>
                 ) : null}
               </div>
             </div>

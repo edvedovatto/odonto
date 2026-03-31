@@ -96,7 +96,7 @@ export default function HistoryPage() {
       const total = data.length
       const attended = data.filter((a: KpiRow) => a.status === 'attended').length
       const revenue = data.filter((a: KpiRow) => a.payment_status === 'paid').reduce((sum: number, a: KpiRow) => sum + (a.value ?? 0), 0)
-      const unpaidItems = data.filter((a: KpiRow) => a.payment_status === 'unpaid' && a.status === 'attended')
+      const unpaidItems = data.filter((a: KpiRow) => a.payment_status === 'unpaid')
       const unpaid = unpaidItems.length
       const unpaidValue = unpaidItems.reduce((sum: number, a: KpiRow) => sum + (a.value ?? 0), 0)
       setKpis({ total, attended, revenue, unpaid, unpaidValue })
