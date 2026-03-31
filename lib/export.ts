@@ -16,11 +16,12 @@ const methodLabel: Record<string, string> = {
 // --- WhatsApp ---
 export function shareWhatsApp(apt: Appointment) {
   const lines = [
-    `Olá! Sua consulta na Clínica Vedo está confirmada.`,
+    `Olá! Sua consulta na Clínica Bio está confirmada.`,
     ``,
     `*Médico:* ${apt.doctor?.name ?? '—'}`,
     `*Data:* ${formatDate(apt.starts_at)}`,
     `*Horário:* ${formatTime(apt.starts_at)}`,
+    `*Endereço:* Rua dos Andradas, 1519 - sala 82`,
     ``,
     `Até lá!`,
   ]

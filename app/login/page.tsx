@@ -39,7 +39,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold text-center mb-1 tracking-tight">Vedo</h1>
+        <h1 className="text-3xl font-bold text-center mb-1 tracking-tight">Bio</h1>
         <p className="text-muted-foreground text-center text-sm mb-8">Entre na sua conta</p>
 
         <form onSubmit={handleLogin} className="space-y-4">
