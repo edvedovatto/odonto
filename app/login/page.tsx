@@ -18,8 +18,16 @@ export default function LoginPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     const emailTrimmed = email.trim()
+    if (!emailTrimmed) {
+      toast.error('E-mail é obrigatório')
+      return
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
       toast.error('Digite um e-mail válido')
+      return
+    }
+    if (!password) {
+      toast.error('Senha é obrigatória')
       return
     }
     if (password.length < 6) {
