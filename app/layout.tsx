@@ -6,17 +6,17 @@ import { Toaster } from "@/components/ui/sonner"
 const inter = Inter({ variable: "--font-sans", subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Vedo",
-  description: "Agenda da clínica Vedo",
+  title: "Odonto",
+  description: "Agenda da clínica",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Vedo",
+    title: "Odonto",
   },
   icons: {
-    icon: "/icon.jpeg",
-    apple: "/icon.jpeg",
+    icon: "/icon-192.png",
+    apple: "/icon-512.png",
   },
 }
 
@@ -34,6 +34,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="h-full bg-background text-foreground antialiased">
         {children}
         <Toaster />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js')`,
+          }}
+        />
       </body>
     </html>
   )
