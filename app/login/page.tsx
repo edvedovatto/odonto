@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
 export default function LoginPage() {
@@ -53,7 +52,8 @@ export default function LoginPage() {
     <div className="min-h-dvh flex flex-col items-center justify-center p-6 bg-background">
       <div className="w-full max-w-sm">
         <div className="flex justify-center mb-8">
-          <Image src="/logo.png" alt="Bio Odontologia" width={240} height={150} className="h-32 w-auto object-contain" priority />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="Bio Odontologia" className="h-36 w-auto" />
         </div>
 
         <p className="text-muted-foreground text-center text-sm mb-8">Entre na sua conta</p>
