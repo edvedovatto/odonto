@@ -31,6 +31,23 @@ export function shareWhatsApp(apt: Appointment) {
   window.open(`https://wa.me/?text=${text}`, '_blank')
 }
 
+// --- WhatsApp agenda do dia ---
+export function shareAgendaWhatsApp(date: string, appointments: Appointment[]) {
+  const dateObj = new Date(date + 'T12:00:00')
+  const dateFormatted = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const active = appointments.filter(apt => apt.status !== 'cancelled')
+  const count = active.length
+  const lines = [
+    `*Agenda do dia — ${dateFormatted}*`,
+    ``,
+    ...active.map(apt => `${formatTime(apt.starts_at)} · ${apt.patient?.name ?? '—'}`),
+    ``,
+    `_${count} consulta${count !== 1 ? 's' : ''}_`,
+  ]
+  const text = encodeURIComponent(lines.join('\n'))
+  window.open(`https://wa.me/?text=${text}`, '_blank')
+}
+
 // --- ICS ---
 function toICSDate(isoString: string): string {
   return isoString.replace(/[-:]/g, '').split('.')[0] + 'Z'

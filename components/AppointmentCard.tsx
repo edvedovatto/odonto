@@ -6,7 +6,7 @@ import { cn, formatTime, formatCurrency, formatDate } from '@/lib/utils'
 import { Sheet, SheetContent, SheetClose } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { Appointment, AppointmentStatus, PaymentMethod, User } from '@/lib/types'
+import type { Appointment, AppointmentStatus, User } from '@/lib/types'
 import { toast } from 'sonner'
 import { shareWhatsApp } from '@/lib/export'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
@@ -20,12 +20,6 @@ interface Props {
   showDate?: boolean
 }
 
-const methodLabel: Record<PaymentMethod, string> = {
-  pix: 'Pix',
-  cash: 'Dinheiro',
-  card: 'Cartão',
-}
-
 export default function AppointmentCard({ appointment: initial, onUpdate, doctors, currentUser, showDate }: Props) {
   const [apt, setApt] = useState(initial)
   const [open, setOpen] = useState(false)
@@ -35,7 +29,6 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
       ? apt.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       : ''
   )
-  const [method, setMethod] = useState<PaymentMethod | ''>(apt.payment_method ?? '')
   const [saving, setSaving] = useState(false)
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
 
@@ -54,11 +47,10 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
   }
 
   async function savePayment() {
-    if (!method) { toast.error('Selecione a forma de pagamento'); return }
     setSaving(true)
     const supabase = createClient()
     const numValue = payValue ? parseFloat(payValue.replace(/\./g, '').replace(',', '.')) : null
-    const updates = { payment_status: 'paid' as const, payment_method: method, value: numValue }
+    const updates = { payment_status: 'paid' as const, payment_method: null, value: numValue }
     const { error } = await supabase.from('appointments').update(updates).eq('id', apt.id)
     if (error) {
       toast.error('Erro ao salvar pagamento')
@@ -83,7 +75,20 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
       setApt(updated)
       onUpdate(updated)
       setPayValue('')
-      setMethod('')
+    }
+  }
+
+  async function togglePaidInline(e: React.MouseEvent) {
+    e.stopPropagation()
+    const supabase = createClient()
+    if (isPaid) {
+      const updates = { payment_status: 'unpaid' as const, payment_method: null, value: null }
+      const { error } = await supabase.from('appointments').update(updates).eq('id', apt.id)
+      if (!error) { setApt({ ...apt, ...updates }); onUpdate({ ...apt, ...updates }); setPayValue('') }
+    } else {
+      const updates = { payment_status: 'paid' as const, payment_method: null, value: null }
+      const { error } = await supabase.from('appointments').update(updates).eq('id', apt.id)
+      if (!error) { setApt({ ...apt, ...updates }); onUpdate({ ...apt, ...updates }) }
     }
   }
 
@@ -99,7 +104,7 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
         onClick={() => setOpen(true)}
         className={cn(
           'w-full text-left rounded-2xl overflow-hidden shadow-sm active:scale-[0.98] transition-transform',
-          isScheduled && 'bg-primary',
+          isScheduled && 'bg-primary border border-white/20',
           isAttended && 'bg-white border border-border',
           isCancelled && 'bg-white border border-border opacity-70',
         )}
@@ -109,7 +114,7 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
             <div className={cn('w-1 shrink-0', isAttended && 'bg-green-500', isCancelled && 'bg-red-400')} />
           )}
           <div className="flex-1 min-w-0 px-4 py-3.5">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0 overflow-hidden">
                 <p className={cn('text-xs font-medium tabular-nums mb-1', isScheduled ? 'text-white/60' : 'text-muted-foreground')}>
                   {showDate ? `${formatDate(apt.starts_at)} · ` : ''}{formatTime(apt.starts_at)} · {apt.duration_minutes} min
@@ -121,17 +126,47 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
                   {apt.doctor?.name ?? '—'}
                 </p>
               </div>
-              <div className="shrink-0 flex flex-col items-end gap-1.5 pt-0.5">
-                {isCancelled && <span className="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-500 font-medium border border-red-100">Cancelado</span>}
-                {isAttended && <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-600 font-medium border border-green-100">Atendido</span>}
-                {isScheduled && <span className="text-xs px-2 py-0.5 rounded-full bg-white/20 text-white font-medium">Agendado</span>}
-                {isPaid ? (
-                  <span className={cn('text-xs font-semibold', isScheduled ? 'text-white/90' : 'text-green-600')}>
-                    {apt.value ? formatCurrency(apt.value) : 'Pago'}
-                  </span>
-                ) : !isCancelled ? (
-                  <span className={cn('text-xs', isScheduled ? 'text-white/50' : 'text-muted-foreground')}>Não pago</span>
-                ) : null}
+              <div className="shrink-0 flex flex-col items-end gap-2">
+                {/* Status com círculo toggle */}
+                <div className="flex items-center gap-1.5">
+                  {isCancelled && <span className="text-xs px-2 py-1 rounded-full bg-red-50 text-red-500 font-medium border border-red-100">Cancelado</span>}
+                  {isAttended && <span className="text-xs px-2 py-1 rounded-full bg-green-50 text-green-600 font-medium border border-green-100">Atendido</span>}
+                  {isScheduled && <span className="text-xs px-2 py-1 rounded-full bg-white/20 text-white font-medium">Agendado</span>}
+                  {!isCancelled && (
+                    <button
+                      onClick={e => { e.stopPropagation(); updateStatus(isAttended ? 'scheduled' : 'attended') }}
+                      className={cn(
+                        'w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all',
+                        isAttended ? 'bg-green-500 border-green-500' : isScheduled ? 'border-white/50' : 'border-border',
+                      )}
+                    >
+                      {isAttended && (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}><path d="M20 6L9 17l-5-5" /></svg>
+                      )}
+                    </button>
+                  )}
+                </div>
+                {/* Pagamento com círculo toggle */}
+                {!isCancelled && (
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn('text-xs font-medium',
+                      isPaid ? isScheduled ? 'text-white' : 'text-green-600' : isScheduled ? 'text-white/50' : 'text-muted-foreground'
+                    )}>
+                      {isPaid ? (apt.value ? formatCurrency(apt.value) : 'Pago') : 'Não pago'}
+                    </span>
+                    <button
+                      onClick={e => { e.stopPropagation(); togglePaidInline(e) }}
+                      className={cn(
+                        'w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all',
+                        isPaid ? isScheduled ? 'bg-white border-white' : 'bg-green-500 border-green-500' : isScheduled ? 'border-white/50' : 'border-border',
+                      )}
+                    >
+                      {isPaid && (
+                        <svg xmlns="http://www.w3.org/2000/svg" className={cn('w-3 h-3', isScheduled ? 'text-primary' : 'text-white')} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}><path d="M20 6L9 17l-5-5" /></svg>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -241,9 +276,7 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-green-700">Pago</p>
-                    <p className="text-sm text-green-600">
-                      {apt.value ? formatCurrency(apt.value) : ''}{apt.payment_method ? ` · ${methodLabel[apt.payment_method]}` : ''}
-                    </p>
+                    {apt.value && <p className="text-sm text-green-600">{formatCurrency(apt.value)}</p>}
                   </div>
                 </div>
                 <button
@@ -256,7 +289,7 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
             ) : (
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1.5">Valor (R$)</p>
+                  <p className="text-sm text-muted-foreground mb-1.5">Valor (R$) — opcional</p>
                   <Input
                     type="text"
                     placeholder="0,00"
@@ -279,25 +312,7 @@ export default function AppointmentCard({ appointment: initial, onUpdate, doctor
                     }}
                   />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1.5">Tipo</p>
-                  <div className="flex gap-2">
-                    {(['pix', 'cash', 'card'] as PaymentMethod[]).map(m => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => setMethod(m)}
-                        className={cn(
-                          'flex-1 h-14 rounded-2xl text-sm font-semibold border transition-all',
-                          method === m ? 'bg-primary text-white border-primary' : 'bg-background text-muted-foreground border-border'
-                        )}
-                      >
-                        {methodLabel[m]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <Button className="w-full h-14 rounded-2xl font-bold" onClick={savePayment} disabled={saving || !method}>
+                <Button className="w-full h-14 rounded-2xl font-bold" onClick={savePayment} disabled={saving}>
                   {saving ? 'Salvando…' : 'Marcar como pago'}
                 </Button>
               </div>
